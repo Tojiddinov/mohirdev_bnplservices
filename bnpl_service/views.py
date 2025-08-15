@@ -1,28 +1,22 @@
-from rest_framework import status, viewsets
+from django.shortcuts import render
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.db import transaction
-from django.utils import timezone
-from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
+from django.utils import timezone
+from django.db.models import Sum, Q
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.shortcuts import get_object_or_404
 from datetime import timedelta, date
-import uuid
 import logging
 import json
 import hashlib
 
-from .models import (
-    User, BNPLPlan, Installment, Refund, 
-    IdempotencyKey, UserStatus, RefundStatus, InstallmentStatus
-)
-from .serializers import (
-    MaskedUserSerializer, BNPLPlanSerializer, CreateBNPLPlanSerializer,
-    RefundSerializer, CreateRefundSerializer, RefundApprovalSerializer,
-    DebtCheckSerializer, RepaymentSerializer, InstallmentSerializer
-)
+from .models import User, BNPLPlan, Installment, Refund, IdempotencyKey, UserStatus, PlanStatus, InstallmentStatus, RefundStatus
+from .serializers import MaskedUserSerializer, BNPLPlanSerializer, InstallmentSerializer, RefundSerializer, CreateBNPLPlanSerializer, CreateRefundSerializer, RefundApprovalSerializer, DebtCheckSerializer, RepaymentSerializer
 from .utils import check_idempotency, save_idempotency_response
-
 
 logger = logging.getLogger(__name__)
 
@@ -635,3 +629,99 @@ class HealthCheckView(APIView):
         """
         
         return HttpResponse(html_content, content_type='text/html')
+
+
+class RefundWebhookView(APIView):
+    """Webhook endpoint for refund status updates from merchants"""
+    
+    def post(self, request):
+        """Process refund status webhook from merchant"""
+        try:
+            # Extract webhook data
+            refund_id = request.data.get('refund_id')
+            webhook_status = request.data.get('status')
+            merchant_reference = request.data.get('merchant_reference')
+            amount = request.data.get('amount')
+            timestamp = request.data.get('timestamp')
+            
+            # Validate required fields
+            if not all([refund_id, webhook_status]):
+                return Response(
+                    {"error": "Missing required fields: refund_id and status"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate status values
+            valid_statuses = ['approved', 'rejected', 'processing', 'failed']
+            if webhook_status not in valid_statuses:
+                return Response(
+                    {"error": f"Invalid status. Must be one of: {', '.join(valid_statuses)}"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Process the webhook synchronously for now
+            # In production, this would be processed asynchronously via Celery
+            try:
+                # Try to process via Celery if available
+                from .tasks import process_refund_webhook
+                process_refund_webhook.delay(refund_id, webhook_status, merchant_reference)
+                logger.info(f"Webhook queued for async processing: {refund_id} - {webhook_status}")
+            except Exception as celery_error:
+                # Fallback to synchronous processing if Celery is not available
+                logger.warning(f"Celery not available, processing webhook synchronously: {celery_error}")
+                
+                # Process webhook synchronously
+                from .models import Refund, RefundStatus, User
+                
+                # Get the first available user (in production this would come from the webhook)
+                try:
+                    user = User.objects.first()
+                    if not user:
+                        return Response(
+                            {"error": "No users found in system"},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                except Exception:
+                    return Response(
+                        {"error": "Error accessing user data"},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                # Find the refund by ID or create a new one
+                refund, created = Refund.objects.get_or_create(
+                    transaction_id=refund_id,
+                    defaults={
+                        'user': user,
+                        'amount': amount or 0,
+                        'status': RefundStatus.PENDING,
+                        'reason': f"Webhook from {merchant_reference or 'unknown'}"
+                    }
+                )
+                
+                # Update refund status
+                if webhook_status == 'approved':
+                    refund.status = RefundStatus.APPROVED
+                elif webhook_status == 'rejected':
+                    refund.status = RefundStatus.REJECTED
+                elif webhook_status == 'failed':
+                    refund.status = RefundStatus.REJECTED
+                elif webhook_status == 'processing':
+                    refund.status = RefundStatus.PENDING
+                
+                refund.save()
+                logger.info(f"Webhook processed synchronously: {refund_id} - {webhook_status}")
+            
+            return Response({
+                "message": "Webhook processed successfully",
+                "refund_id": refund_id,
+                "status": webhook_status,
+                "processed_at": timezone.now().isoformat(),
+                "processing_mode": "async" if 'celery_error' not in locals() else "sync"
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Error processing webhook: {str(e)}")
+            return Response(
+                {"error": "Internal server error"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
