@@ -77,7 +77,7 @@ class HomeView(APIView):
                         <h3>⚙️ Admin Panel</h3>
                         <p>Manage users, plans, and refunds</p>
                     </a>
-                    <a href="/api/v1/users/" class="endpoint-card">
+                    <a href="/users-page/" class="endpoint-card">
                         <h3>👥 Users</h3>
                         <p>View and manage user data (with masking)</p>
                     </a>
@@ -109,6 +109,115 @@ class HomeView(APIView):
         </body>
         </html>
         """
+        return HttpResponse(html_content, content_type='text/html')
+
+
+class UsersPageView(APIView):
+    """Users page view for displaying users in a nice HTML format"""
+    
+    def get(self, request):
+        """Return users page with formatted user data"""
+        users = User.objects.all()
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Users - BNPL Service</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 0; background: #f5f5f5; }}
+                .header {{ background: #2c3e50; color: white; padding: 20px; text-align: center; }}
+                .container {{ max-width: 1200px; margin: 20px auto; background: white; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden; }}
+                .nav {{ background: #34495e; padding: 15px; }}
+                .nav a {{ color: white; text-decoration: none; margin-right: 20px; padding: 8px 16px; border-radius: 5px; transition: background 0.3s; }}
+                .nav a:hover {{ background: #2c3e50; }}
+                .users-grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; padding: 20px; }}
+                .user-card {{ background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 10px; padding: 20px; transition: transform 0.2s, box-shadow 0.2s; }}
+                .user-card:hover {{ transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }}
+                .user-header {{ display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }}
+                .user-name {{ font-size: 1.2em; font-weight: bold; color: #2c3e50; }}
+                .user-status {{ padding: 5px 12px; border-radius: 20px; font-size: 0.8em; font-weight: bold; }}
+                .status-normal {{ background: #d4edda; color: #155724; }}
+                .status-debt {{ background: #f8d7da; color: #721c24; }}
+                .user-info {{ margin-bottom: 15px; }}
+                .info-row {{ display: flex; justify-content: space-between; margin-bottom: 8px; padding: 5px 0; border-bottom: 1px solid #eee; }}
+                .info-label {{ font-weight: bold; color: #6c757d; }}
+                .info-value {{ color: #495057; }}
+                .masked {{ color: #6c757d; font-style: italic; }}
+                .back-btn {{ display: inline-block; background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin: 20px; }}
+                .back-btn:hover {{ background: #2980b9; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>👥 Users Management</h1>
+                <p>BNPL Debt & Refund Service</p>
+            </div>
+            
+            <div class="nav">
+                <a href="/">🏠 Home</a>
+                <a href="/swagger/">📚 API Docs</a>
+                <a href="/admin/">⚙️ Admin</a>
+                <a href="/api/v1/health/">💚 Health</a>
+            </div>
+            
+            <div class="container">
+                <div class="users-grid">
+        """
+        
+        for user in users:
+            status_class = "status-normal" if user.status == "NORMAL" else "status-debt"
+            status_text = "Normal User" if user.status == "NORMAL" else "Debt User"
+            
+            html_content += f"""
+                    <div class="user-card">
+                        <div class="user-header">
+                            <div class="user-name">{user.full_name}</div>
+                            <div class="user-status {status_class}">{status_text}</div>
+                        </div>
+                        
+                        <div class="user-info">
+                            <div class="info-row">
+                                <span class="info-label">User ID:</span>
+                                <span class="info-value">{user.user_id}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Phone:</span>
+                                <span class="info-value masked">{user.mask_personal_info()['phone_number']}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Passport:</span>
+                                <span class="info-value masked">{user.mask_personal_info()['passport_number']}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Card:</span>
+                                <span class="info-value masked">{user.mask_personal_info()['card_number']}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Birth Date:</span>
+                                <span class="info-value">{user.date_of_birth}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Created:</span>
+                                <span class="info-value">{user.created_at.strftime('%Y-%m-%d %H:%M')}</span>
+                            </div>
+                        </div>
+                    </div>
+            """
+        
+        html_content += """
+                </div>
+            </div>
+            
+            <div style="text-align: center;">
+                <a href="/" class="back-btn">← Back to Home</a>
+            </div>
+        </body>
+        </html>
+        """
+        
         return HttpResponse(html_content, content_type='text/html')
 
 
