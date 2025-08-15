@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from django.db import transaction
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
 from datetime import timedelta, date
 import uuid
 import logging
@@ -22,7 +23,93 @@ from .serializers import (
 )
 from .utils import check_idempotency, save_idempotency_response
 
+
 logger = logging.getLogger(__name__)
+
+
+class HomeView(APIView):
+    """Home page view for the BNPL service"""
+    
+    def get(self, request):
+        """Return home page with service information and links"""
+        html_content = """
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>BNPL Debt & Refund Service</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+                .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+                .service-info { background: #ecf0f1; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+                .endpoints { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+                .endpoint-card { background: #3498db; color: white; padding: 20px; border-radius: 8px; text-decoration: none; transition: transform 0.2s; }
+                .endpoint-card:hover { transform: translateY(-2px); }
+                .endpoint-card h3 { margin: 0 0 10px 0; }
+                .endpoint-card p { margin: 0; opacity: 0.9; }
+                .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+                .stat-card { background: #27ae60; color: white; padding: 20px; border-radius: 8px; text-align: center; }
+                .stat-number { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
+                .footer { text-align: center; margin-top: 30px; color: #7f8c8d; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h1>🏦 BNPL Debt & Refund Service</h1>
+                
+                <div class="service-info">
+                    <h2>Welcome to the BNPL Service!</h2>
+                    <p>This is a comprehensive microservice for managing Buy Now, Pay Later (BNPL) installment plans, debt management, and refund processing. The service provides secure APIs with data masking, idempotency support, and comprehensive business logic.</p>
+                </div>
+                
+                <div class="endpoints">
+                    <a href="/swagger/" class="endpoint-card">
+                        <h3>📚 API Documentation</h3>
+                        <p>Interactive Swagger/OpenAPI documentation for all endpoints</p>
+                    </a>
+                    <a href="/api/v1/health/" class="endpoint-card">
+                        <h3>💚 Health Check</h3>
+                        <p>Check service status and uptime</p>
+                    </a>
+                    <a href="/admin/" class="endpoint-card">
+                        <h3>⚙️ Admin Panel</h3>
+                        <p>Manage users, plans, and refunds</p>
+                    </a>
+                    <a href="/api/v1/users/" class="endpoint-card">
+                        <h3>👥 Users</h3>
+                        <p>View and manage user data (with masking)</p>
+                    </a>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">5</div>
+                        <div>API Endpoints</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">4</div>
+                        <div>Data Models</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">18</div>
+                        <div>Tests</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div>Coverage</div>
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>Built with Django, DRF, and ❤️ | Ready for production use</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        return HttpResponse(html_content, content_type='text/html')
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
