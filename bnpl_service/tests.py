@@ -321,5 +321,7 @@ class HealthCheckAPITest(APITestCase):
         url = reverse('health-check')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'healthy')
-        self.assertIn('timestamp', response.data)
+        # Health check now returns HTML, so check content type and HTML content
+        self.assertIn('text/html', response['Content-Type'])
+        self.assertIn('Service is Healthy', response.content.decode())
+        self.assertIn('BNPL Debt & Refund Service', response.content.decode())

@@ -1,4 +1,4 @@
-name: BNPL Service CI/CD Pipeline
+name: BNPL Service CI/CD Pipeline (Free Tier)
 
 on:
   push:
@@ -108,49 +108,50 @@ jobs:
         docker build -t bnpl-service:${{ github.sha }} .
         docker build -t bnpl-service:latest .
     
-    - name: Log in to Docker Hub
+    - name: Log in to Docker Hub (Optional - only if you have credentials)
       uses: docker/login-action@v3
+      if: ${{ secrets.DOCKER_USERNAME != '' }}
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
     
-    - name: Push Docker image
+    - name: Push Docker image (Optional - only if you have credentials)
+      if: ${{ secrets.DOCKER_USERNAME != '' }}
       run: |
         docker tag bnpl-service:${{ github.sha }} ${{ secrets.DOCKER_USERNAME }}/bnpl-service:${{ github.sha }}
         docker tag bnpl-service:latest ${{ secrets.DOCKER_USERNAME }}/bnpl-service:latest
         docker push ${{ secrets.DOCKER_USERNAME }}/bnpl-service:${{ github.sha }}
         docker push ${{ secrets.DOCKER_USERNAME }}/bnpl-service:latest
 
-  deploy-staging:
+  deploy-simulation:
     needs: build
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    environment: staging
     
     steps:
-    - name: Deploy to staging
+    - name: Simulate deployment to staging
       run: |
-        echo "Deploying to staging environment..."
-        # Add your staging deployment commands here
-        # Example: kubectl apply -f k8s/staging/
-        # Example: docker-compose -f docker-compose.staging.yml up -d
-
-  deploy-production:
-    needs: [build, deploy-staging]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: production
+        echo "🎯 Simulating deployment to staging environment..."
+        echo "✅ All tests passed"
+        echo "✅ Docker image built successfully"
+        echo "🚀 Ready for deployment to staging"
+        echo ""
+        echo "📋 Deployment commands would be:"
+        echo "  docker-compose -f docker-compose.prod.yml up -d"
+        echo "  kubectl apply -f k8s/deployment.yaml"
     
-    steps:
-    - name: Deploy to production
+    - name: Simulate deployment to production
       run: |
-        echo "Deploying to production environment..."
-        # Add your production deployment commands here
-        # Example: kubectl apply -f k8s/production/
-        # Example: docker-compose -f docker-compose.prod.yml up -d
+        echo "🎯 Simulating deployment to production environment..."
+        echo "✅ Staging deployment simulation completed"
+        echo "🚀 Ready for production deployment"
+        echo ""
+        echo "📋 Production deployment commands would be:"
+        echo "  docker-compose -f docker-compose.prod.yml up -d"
+        echo "  kubectl apply -f k8s/deployment.yaml"
 
   notify:
-    needs: [test, build, deploy-production]
+    needs: [test, build, deploy-simulation]
     runs-on: ubuntu-latest
     if: always()
     
@@ -159,10 +160,21 @@ jobs:
       if: success()
       run: |
         echo "🎉 All CI/CD stages completed successfully!"
-        # Add notification logic (Slack, email, etc.)
+        echo "✅ Tests passed"
+        echo "✅ Build completed"
+        echo "✅ Deployment simulation successful"
+        echo ""
+        echo "🚀 Your BNPL Service is ready for production!"
+        echo "📚 API Documentation: /swagger/"
+        echo "🔧 Admin Panel: /admin/"
+        echo "🏠 Home Page: /"
     
     - name: Notify on failure
       if: failure()
       run: |
         echo "❌ CI/CD pipeline failed!"
-        # Add failure notification logic
+        echo "🔍 Check the logs above for details"
+        echo "💡 Common issues:"
+        echo "   - Test failures"
+        echo "   - Build errors"
+        echo "   - Configuration issues"
