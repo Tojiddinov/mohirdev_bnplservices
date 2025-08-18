@@ -533,6 +533,110 @@ bnpl-debt-refund-service/
 
 ---
 
+## 📦 **Complete Dependencies & Plugins**
+
+### **🐍 Core Python Dependencies (`requirements.txt`)**
+```txt
+# Core Framework
+Django==4.2.7                 # Main web framework
+djangorestframework==3.14.0   # REST API framework
+python-decouple==3.8          # Environment variables
+
+# Database
+psycopg2-binary==2.9.9        # PostgreSQL adapter
+
+# Background Tasks & Caching
+celery==5.5.3                 # Background task queue
+redis==6.4.0                  # In-memory data store
+
+# API Documentation
+drf-yasg==1.21.10             # Swagger/OpenAPI docs
+
+# CORS & Security
+django-cors-headers==4.7.0    # CORS handling
+
+# Production Server
+gunicorn==21.2.0              # Production WSGI server
+```
+
+### **🧪 Testing & Quality Dependencies**
+```txt
+# Testing Framework
+pytest==8.4.1                 # Testing framework
+pytest-django==4.11.1         # Django integration for pytest
+pytest-cov==4.1.0             # Coverage reporting
+factory-boy==3.3.0            # Test data factories
+freezegun==1.2.2              # Time/date mocking
+```
+
+### **⚙️ Django Built-in Apps & Middleware**
+```python
+INSTALLED_APPS = [
+    'django.contrib.admin',          # Admin interface
+    'django.contrib.auth',           # Authentication system
+    'django.contrib.contenttypes',   # Content types framework
+    'django.contrib.sessions',       # Session management
+    'django.contrib.messages',       # Messaging framework
+    'django.contrib.staticfiles',    # Static files handling
+    'rest_framework',                # Django REST Framework
+    'corsheaders',                   # CORS headers middleware
+    'drf_yasg',                      # Swagger documentation
+    'bnpl_service',                  # Main application
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+]
+```
+
+### **🐳 Infrastructure Dependencies**
+```yaml
+# Docker Services
+services:
+  - PostgreSQL 15 Alpine      # Production database
+  - Redis 7 Alpine           # Message broker & cache
+  - Python 3.11 Slim         # Application runtime
+  - Nginx (production)        # Reverse proxy
+  
+# System Dependencies (in Docker)
+  - gcc                       # Compiler for Python packages
+  - postgresql-client         # Database client tools
+```
+
+### **📊 Plugin Summary by Category**
+| Category | Count | Key Plugins |
+|----------|-------|-------------|
+| **Core Framework** | 4 | Django, DRF, decouple, psycopg2 |
+| **API & Docs** | 2 | drf-yasg, corsheaders |
+| **Background Tasks** | 2 | Celery, Redis |
+| **Testing** | 5 | pytest, pytest-django, factory-boy |
+| **Production** | 4 | gunicorn, Docker, PostgreSQL, Nginx |
+| **Django Built-ins** | 6 | Admin, Auth, Sessions, Messages |
+| **Total** | **23+** | **Enterprise-grade stack** |
+
+### **🚀 Installation Commands**
+```bash
+# Install all Python dependencies
+pip install -r requirements.txt
+
+# Or using Docker (recommended)
+docker-compose up -d
+
+# Verify installation
+python manage.py check
+pytest --version
+celery --version
+```
+
+---
+
 ## 🌟 **Innovation Highlights**
 
 ### **1. Smart Business Logic**
@@ -639,12 +743,6 @@ This **BNPL Debt & Refund Service** represents a **world-class, enterprise-ready
 
 This project is licensed under the BSD License - see the LICENSE file for details.
 
-## 🤝 **Contributing**
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 For questions and support, please create an issue in the repository.

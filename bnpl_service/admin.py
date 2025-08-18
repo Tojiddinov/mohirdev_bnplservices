@@ -8,7 +8,7 @@ class UserAdmin(admin.ModelAdmin):
     list_display = ['user_id', 'full_name', 'phone_number', 'status', 'created_at']
     list_filter = ['status', 'created_at']
     search_fields = ['user_id', 'full_name', 'phone_number']
-    readonly_fields = ['user_id', 'created_at', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at']
     
     fieldsets = (
         ('Basic Information', {

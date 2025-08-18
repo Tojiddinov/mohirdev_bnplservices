@@ -4,6 +4,23 @@ from django.utils import timezone
 import uuid
 
 
+def generate_user_id():
+    """Generate a unique user ID in the format mock-usr-XXX"""
+    last_user = User.objects.order_by('created_at').last()
+    if last_user:
+        # Extract number from last user_id (e.g., 'mock-usr-003' -> 3)
+        try:
+            last_number = int(last_user.user_id.split('-')[-1])
+            new_number = last_number + 1
+        except (ValueError, IndexError):
+            # Fallback if the format is unexpected
+            new_number = User.objects.count() + 1
+    else:
+        new_number = 1
+    
+    return f"mock-usr-{new_number:03d}"
+
+
 class UserStatus(models.TextChoices):
     NORMAL = 'NORMAL', 'Normal'
     DEBT_USER = 'DEBT_USER', 'Debt User'
@@ -29,7 +46,7 @@ class PlanStatus(models.TextChoices):
 
 class User(models.Model):
     """Mock User model for BNPL system"""
-    user_id = models.CharField(max_length=100, primary_key=True, default='mock-usr-001')
+    user_id = models.CharField(max_length=100, primary_key=True, default=generate_user_id)
     full_name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20)
     personal_info = models.JSONField(help_text="Stores sensitive user information", null=True, blank=True)
@@ -56,12 +73,19 @@ class User(models.Model):
 
     def mask_personal_info(self):
         """Returns masked version of personal information"""
+        # Safely handle card_info in case it's not a dict (data corruption)
+        card_number = "****"
+        if self.card_info and isinstance(self.card_info, dict):
+            card_info_number = self.card_info.get('card_number', '')
+            if card_info_number and len(str(card_info_number)) >= 8:
+                card_str = str(card_info_number)
+                card_number = f"{card_str[:4]} **** **** {card_str[-4:]}"
+        
         return {
             "full_name": self.full_name,
             "phone_number": f"+{self.phone_number[:3]}****{self.phone_number[-4:]}",
             "passport_number": "AA*******",
-            "card_number": f"{self.card_info.get('card_number', '')[:4]} **** **** {self.card_info.get('card_number', '')[-4:]}"
-            if self.card_info.get('card_number') else "****"
+            "card_number": card_number
         }
 
 
